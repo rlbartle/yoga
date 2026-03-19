@@ -378,6 +378,12 @@ Direction Node::resolveDirection(const Direction ownerDirection) {
   }
 }
 
+void Node::sortChildren() {
+  std::sort(children_.begin(), children_.end(), [](Node* lhs, Node* rhs) {
+    return lhs->getZOrder() < rhs->getZOrder();
+  });
+}
+
 void Node::clearChildren() {
   children_.clear();
   children_.shrink_to_fit();

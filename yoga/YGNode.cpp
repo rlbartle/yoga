@@ -125,17 +125,144 @@ YGDirtiedFunc YGNodeGetDirtiedFunc(YGNodeConstRef node) {
   return resolveRef(node)->getDirtiedFunc();
 }
 
+static void ensureDistinctZOrders(const YGNodeRef parentNodeRef, YGNodeRef nodeRef,
+    bool loweringZOrder) {
+  auto parentNode = resolveRef(parentNodeRef);
+  auto node = resolveRef(nodeRef);
+  if (parentNode == nullptr || parentNode->getZOrderDistinctionSuppression())
+    return;
+
+  // This method is called on every z-order change (or insertion), so
+  // there can't be more than one duplicate z-order at a time.
+  const size_t childCount = YGNodeGetChildCount(parentNode);
+
+  for (size_t i = 0; i < childCount; i++) {
+    Node *prevChild = nullptr, *child = resolveRef(parentNode->getChild(i));
+    if (node != child && node->getZOrder() == child->getZOrder()) {
+      // Found another node with this z-order.
+
+      // There are two modes for handling the conflicting z-orders.
+      // Either:
+      // Increment the z-order of every subsequent node where the z-order is
+      // contiguous. OR Decrement the conflicting z-order.
+
+      // The decrement case is useful for enabling 'swapping' of item's z-order
+      // precedence. It is used when the previous z-order is not in use,
+      // otherwise the increment mode is performed.
+      if (!loweringZOrder &&
+          // If the node before this has space between it..
+          ((i > 0 &&
+            (prevChild = resolveRef(parentNode->getChild(i - 1)))->getZOrder() <
+                child->getZOrder() - 1) ||
+
+           // If the node before this is the given node, then check the node
+           // before that..
+           (prevChild == node &&
+            ((i > 1 &&
+              (prevChild = resolveRef(parentNode->getChild(i - 2)))->getZOrder() <
+                  child->getZOrder() - 1) ||
+             ((i == 1 && child->getZOrder() > 0)))) ||
+
+           // If this node is the first and has room for going lower.
+           (i == 0 && child->getZOrder() > 0))) {
+        // Decrement mode.
+        child->setZOrder(child->getZOrder() - 1);
+        child->markDirtyAndPropagate();
+      } else {
+        // Increment mode.
+        child->setZOrder(child->getZOrder() + 1);
+        child->markDirtyAndPropagate();
+        node = child;
+
+        for (++i; i < childCount; i++) {
+          child = parentNode->getChild(i);
+          if (node->getZOrder() == child->getZOrder()) {
+            child->setZOrder(child->getZOrder() + 1);
+            child->markDirtyAndPropagate();
+            node = child;
+          } else {
+            // Not contiguous. All children therefore have unique z-orders now.
+            break;
+          }
+        }
+      }
+
+      // A z-order conflict has been found and resolved, no need to continue
+      break;
+    }
+  }
+
+  // The children are to be indexed according to their z-orders.
+  parentNode->sortChildren();
+}
+
+static size_t getAutomaticZOrder(const YGNodeRef nodeRef) {
+  auto node = resolveRef(nodeRef);
+  auto parentNode = resolveRef(node->getOwner());
+  // Returns a suitable z-order. When possible it will be the incrementation
+  // of the previous node's z-order.
+  if (parentNode != nullptr) {
+    for (ptrdiff_t i = (ptrdiff_t)YGNodeGetChildCount(parentNode) - 1; i >= 0;
+         --i) {
+      if (node == parentNode->getChild((size_t)i)) {
+        if (--i >= 0) {
+          return parentNode->getChild((size_t)i)->getZOrder() + 1;
+        }
+      }
+    }
+    // Default/initial value for an empty tree/node is first in tree.
+    return 0;
+  } else {
+    // The node is not added to the Yoga tree yet, so no order is possible.
+    return SIZE_MAX;
+  }
+}
+
+void YGNodeSetZOrder(const YGNodeRef nodeRef, size_t zOrder) {
+  auto node = resolveRef(nodeRef);
+  const size_t lastZOrder = node->getZOrder();
+  if ((ptrdiff_t)zOrder < 0) {
+    // Indicates the z-order should be determined automatically.
+    // Typically incrementing from the previous item.
+    zOrder = getAutomaticZOrder(node);
+  }
+  if (lastZOrder != zOrder) {
+    node->setZOrder(zOrder);
+    if (zOrder != SIZE_MAX) {
+      ensureDistinctZOrders(node->getOwner(), node, zOrder <= lastZOrder);
+    }
+    node->markDirtyAndPropagate();
+  }
+}
+
+size_t YGNodeGetZOrder(const YGNodeRef nodeRef) {
+  auto node = resolveRef(nodeRef);
+  return node->getZOrder();
+}
+
+void YGNodeSuppressZOrderDistinction(YGNodeRef nodeRef, bool suppress) {
+  auto node = resolveRef(nodeRef);
+  if (suppress != node->getZOrderDistinctionSuppression()) {
+    node->setZOrderDistinctionSuppression(suppress);
+    if (!suppress) {
+      const size_t childCount = YGNodeGetChildCount(node);
+      for (size_t i = 0; i < childCount; i++) {
+        ensureDistinctZOrders(nodeRef, node->getChild(i), true);
+      }
+    }
+  }
+}
+
 void YGNodeInsertChild(
     const YGNodeRef ownerRef,
     const YGNodeRef childRef,
     const size_t index) {
   auto owner = resolveRef(ownerRef);
   auto child = resolveRef(childRef);
-
   yoga::assertFatalWithNode(
       owner,
       child->getOwner() == nullptr,
-      "Child already has a owner, it must be removed first.");
+      "Child already has an owner, it must be removed first.");
 
   yoga::assertFatalWithNode(
       owner,
@@ -144,6 +271,14 @@ void YGNodeInsertChild(
 
   owner->insertChild(child, index);
   child->setOwner(owner);
+  size_t zOrder = child->getZOrder();
+  if (zOrder == SIZE_MAX) {
+    // Indicates the z-order should be determined automatically.
+    // Typically incrementing from the previous item.
+    zOrder = getAutomaticZOrder(child);
+    child->setZOrder(zOrder);
+  }
+  ensureDistinctZOrders(ownerRef, childRef, zOrder != child->getZOrder());
   owner->markDirtyAndPropagate();
 }
 
@@ -303,6 +438,10 @@ void* YGNodeGetContext(YGNodeConstRef node) {
 
 void YGNodeSetMeasureFunc(YGNodeRef node, YGMeasureFunc measureFunc) {
   resolveRef(node)->setMeasureFunc(measureFunc);
+}
+
+YGMeasureFunc YGNodeGetMeasureFunc(YGNodeRef node) {
+  return resolveRef(node)->getMeasureFunc();
 }
 
 bool YGNodeHasMeasureFunc(YGNodeConstRef node) {

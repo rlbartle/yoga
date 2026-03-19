@@ -49,12 +49,12 @@ inline FloatOptional boundAxisWithinMinAndMax(
         direction, Dimension::Width, axisSize, widthSize);
   }
 
-  if (max >= FloatOptional{0} && value > max) {
-    return max;
+  if (min.isDefined() && min >= FloatOptional{0} && value < min) {
+    return min;
   }
 
-  if (min >= FloatOptional{0} && value < min) {
-    return min;
+  if (max >= FloatOptional{0} && value > max) {
+    return max;
   }
 
   return value;

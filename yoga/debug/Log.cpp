@@ -9,6 +9,8 @@
 
 #ifdef ANDROID
 #include <android/log.h>
+#elif defined(_WIN32) || defined(WIN32)
+#include <windows.h>
 #endif
 
 namespace facebook::yoga {
@@ -88,6 +90,12 @@ YGLogger getDefaultLogger() {
         break;
     }
     return __android_log_vprint(androidLevel, "yoga", format, args);
+#elif defined(_WIN32) || defined(WIN32)
+    char buf[512];
+    int len = _vsnprintf_s(buf, 512, format, args);
+    (void)level;
+    OutputDebugStringA((LPCSTR)buf);
+    return len;
 #else
     switch (level) {
       case YGLogLevelError:

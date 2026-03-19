@@ -44,6 +44,7 @@ FlexLine calculateFlexLine(
   for (; iterator != childrenEnd; iterator++) {
     auto child = *iterator;
     if (child->style().display() == Display::None ||
+        child->style().display() == Display::Custom ||
         child->style().positionType() == PositionType::Absolute) {
       continue;
     }
@@ -99,6 +100,11 @@ FlexLine calculateFlexLine(
     }
 
     itemsInFlow.push_back(child);
+
+    // Zero as maxLineItems is interpreted as unlimited since 0 makes no sense.
+    if (itemsInFlow.size() == node->style().maxLineItems()) {
+      break;
+    }
   }
 
   // The total flex factor needs to be floored to 1.

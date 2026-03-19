@@ -130,6 +130,13 @@ class YG_EXPORT Style {
     display_ = value;
   }
 
+  size_t maxLineItems() const {
+    return maxLineItems_;
+  }
+  void setMaxLineItems(size_t value) {
+    maxLineItems_ = value;
+  }
+
   FloatOptional flex() const {
     return pool_.getNumber(flex_);
   }
@@ -645,6 +652,7 @@ class YG_EXPORT Style {
         alignItems_ == other.alignItems_ && alignSelf_ == other.alignSelf_ &&
         positionType_ == other.positionType_ && flexWrap_ == other.flexWrap_ &&
         overflow_ == other.overflow_ && display_ == other.display_ &&
+        maxLineItems_ == other.maxLineItems_ &&
         numbersEqual(flex_, pool_, other.flex_, other.pool_) &&
         numbersEqual(flexGrow_, pool_, other.flexGrow_, other.pool_) &&
         numbersEqual(flexShrink_, pool_, other.flexShrink_, other.pool_) &&
@@ -856,6 +864,7 @@ class YG_EXPORT Style {
   Overflow overflow_ : bitCount<Overflow>() = Overflow::Visible;
   Display display_ : bitCount<Display>() = Display::Flex;
   BoxSizing boxSizing_ : bitCount<BoxSizing>() = BoxSizing::BorderBox;
+  size_t maxLineItems_{SIZE_MAX};
 
   StyleValueHandle flex_{};
   StyleValueHandle flexGrow_{};

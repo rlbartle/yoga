@@ -159,6 +159,15 @@ YGDisplay YGNodeStyleGetDisplay(const YGNodeConstRef node) {
   return unscopedEnum(resolveRef(node)->style().display());
 }
 
+void YGNodeStyleSetMaxLineItems(const YGNodeRef nodeRef, const size_t maxLineItems) {
+  updateStyle<&Style::maxLineItems, &Style::setMaxLineItems>(nodeRef, maxLineItems);
+}
+
+size_t YGNodeStyleGetMaxLineItems(const YGNodeConstRef nodeRef) {
+  const auto node = resolveRef(nodeRef);
+  return node->style().maxLineItems();
+}
+
 void YGNodeStyleSetFlex(const YGNodeRef node, const float flex) {
   updateStyle<&Style::flex, &Style::setFlex>(node, FloatOptional{flex});
 }

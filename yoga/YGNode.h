@@ -114,6 +114,10 @@ YG_EXPORT void YGNodeSetDirtiedFunc(YGNodeRef node, YGDirtiedFunc dirtiedFunc);
  */
 YG_EXPORT YGDirtiedFunc YGNodeGetDirtiedFunc(YGNodeConstRef node);
 
+YG_EXPORT size_t YGNodeGetZOrder(const YGNodeRef nodeRef);
+YG_EXPORT void YGNodeSetZOrder(const YGNodeRef nodeRef, size_t index);
+YG_EXPORT void YGNodeSuppressZOrderDistinction(YGNodeRef nodeRef, bool suppress);
+
 /**
  * Inserts a child node at the given index.
  */
@@ -214,6 +218,8 @@ typedef YGSize (*YGMeasureFunc)(
  * measurements of the node changes.
  */
 YG_EXPORT void YGNodeSetMeasureFunc(YGNodeRef node, YGMeasureFunc measureFunc);
+
+YG_EXPORT YGMeasureFunc YGNodeGetMeasureFunc(YGNodeConstRef node);
 
 /**
  * Whether a measure function is set.

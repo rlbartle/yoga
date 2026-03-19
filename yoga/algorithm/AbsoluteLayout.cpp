@@ -361,6 +361,7 @@ void layoutAbsoluteChild(
   // Exactly one dimension needs to be defined for us to be able to do aspect
   // ratio calculation. One dimension being the anchor and the other being
   // flexible.
+  // TODO: boundAxis?  min/max AR completely ignored with this.
   const auto& childStyle = child->style();
   if (yoga::isUndefined(childWidth) ^ yoga::isUndefined(childHeight)) {
     if (childStyle.aspectRatio().isDefined()) {
@@ -465,7 +466,8 @@ bool layoutAbsoluteDescendants(
     float containingNodeAvailableInnerHeight) {
   bool hasNewLayout = false;
   for (auto child : currentNode->getLayoutChildren()) {
-    if (child->style().display() == Display::None) {
+    if (child->style().display() == Display::None ||
+        child->style().display() == Display::Custom) {
       continue;
     } else if (child->style().positionType() == PositionType::Absolute) {
       const bool absoluteErrata =

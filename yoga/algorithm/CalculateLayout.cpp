@@ -199,18 +199,6 @@ static void computeFlexBasisForChild(
     }
 
     const auto& childStyle = child->style();
-    if (childStyle.aspectRatio().isDefined()) {
-      if (!isMainAxisRow && childWidthSizingMode == SizingMode::StretchFit) {
-        childHeight = marginColumn +
-            (childWidth - marginRow) / childStyle.aspectRatio().unwrap();
-        childHeightSizingMode = SizingMode::StretchFit;
-      } else if (
-          isMainAxisRow && childHeightSizingMode == SizingMode::StretchFit) {
-        childWidth = marginRow +
-            (childHeight - marginColumn) * childStyle.aspectRatio().unwrap();
-        childWidthSizingMode = SizingMode::StretchFit;
-      }
-    }
 
     // If child has no defined size in the cross axis and is set to stretch, set
     // the cross axis to be measured exactly with the available inner width
@@ -413,35 +401,113 @@ static void measureNodeWithoutChildren(
     const float ownerWidth,
     const float ownerHeight) {
   const auto& layout = node->getLayout();
+  const float paddingAndBorderAxisRow = layout.padding(PhysicalEdge::Left) +
+      layout.padding(PhysicalEdge::Right) + layout.border(PhysicalEdge::Left) +
+      layout.border(PhysicalEdge::Right);
+  const float paddingAndBorderAxisColumn = layout.padding(PhysicalEdge::Top) +
+      layout.padding(PhysicalEdge::Bottom) + layout.border(PhysicalEdge::Top) +
+      layout.border(PhysicalEdge::Bottom);
+  float mesaured_width = YGUndefined;
+  float mesaured_height = YGUndefined;
 
-  float width = availableWidth;
-  if (widthSizingMode == SizingMode::MaxContent ||
-      widthSizingMode == SizingMode::FitContent) {
-    width = layout.padding(PhysicalEdge::Left) +
-        layout.padding(PhysicalEdge::Right) +
-        layout.border(PhysicalEdge::Left) + layout.border(PhysicalEdge::Right);
-  }
-  node->setLayoutMeasuredDimension(
-      boundAxis(
-          node, FlexDirection::Row, direction, width, ownerWidth, ownerWidth),
-      Dimension::Width);
-
-  float height = availableHeight;
-  if (heightSizingMode == SizingMode::MaxContent ||
-      heightSizingMode == SizingMode::FitContent) {
-    height = layout.padding(PhysicalEdge::Top) +
-        layout.padding(PhysicalEdge::Bottom) +
-        layout.border(PhysicalEdge::Top) + layout.border(PhysicalEdge::Bottom);
-  }
-  node->setLayoutMeasuredDimension(
-      boundAxis(
+  // Handle the aspect ratio constraint bounding for the main-axis when the
+  // cross-axis size has been limited by its own min/max constraint.
+  if (node->getOwner() && node->style().aspectRatio().isDefined()) {
+    if (isRow(node->getOwner()->style().flexDirection())) {
+      // Main-axis is Row.
+      mesaured_height = boundAxis(
           node,
           FlexDirection::Column,
           direction,
-          height,
+          (heightSizingMode == SizingMode::MaxContent ||
+           heightSizingMode == SizingMode::FitContent)
+              ? paddingAndBorderAxisColumn
+              : availableHeight,
           ownerHeight,
-          ownerWidth),
-      Dimension::Height);
+          ownerWidth);
+      float unbounded_width =
+          mesaured_height * node->style().aspectRatio().unwrap();
+      mesaured_width = boundAxis(
+          node,
+          FlexDirection::Row,
+          direction,
+          unbounded_width,
+          ownerWidth,
+          ownerWidth);
+
+      if (mesaured_width != unbounded_width) {
+        // also check the cross-axis aspect ratio when the main-axis min/max
+        // constraints are hit.
+        mesaured_height = boundAxis(
+            node,
+            FlexDirection::Column,
+            direction,
+            mesaured_width / node->style().aspectRatio().unwrap(),
+            ownerHeight,
+            ownerWidth);
+      }
+    } else {
+      // Main-axis is Column.
+      mesaured_width = boundAxis(
+          node,
+          FlexDirection::Row,
+          direction,
+          (widthSizingMode == SizingMode::MaxContent ||
+           widthSizingMode == SizingMode::FitContent)
+              ? paddingAndBorderAxisRow
+              : availableWidth,
+          ownerWidth,
+          ownerWidth);
+      float unbounded_height =
+          mesaured_width / node->style().aspectRatio().unwrap();
+      mesaured_height = boundAxis(
+          node,
+          FlexDirection::Column,
+          direction,
+          unbounded_height,
+          ownerHeight,
+          ownerWidth);
+
+      if (mesaured_height == unbounded_height) {
+        // also check the cross-axis aspect ratio when the main-axis min/max
+        // constraints are hit.
+        mesaured_width = boundAxis(
+            node,
+            FlexDirection::Row,
+            direction,
+            mesaured_height * node->style().aspectRatio().unwrap(),
+            ownerWidth,
+            ownerWidth);
+      }
+    }
+  }
+
+  if (mesaured_width == YGUndefined) {
+    mesaured_width = boundAxis(
+        node,
+        FlexDirection::Row,
+        direction,
+        (widthSizingMode == SizingMode::MaxContent ||
+         widthSizingMode == SizingMode::FitContent)
+            ? paddingAndBorderAxisRow
+            : availableWidth,
+        ownerWidth,
+        ownerWidth);
+  }
+  if (mesaured_height == YGUndefined) {
+    mesaured_height = boundAxis(
+        node,
+        FlexDirection::Column,
+        direction,
+        (heightSizingMode == SizingMode::MaxContent ||
+         heightSizingMode == SizingMode::FitContent)
+            ? paddingAndBorderAxisColumn
+            : availableHeight,
+        ownerHeight,
+        ownerWidth);
+  }
+  node->setLayoutMeasuredDimension(mesaured_width, Dimension::Width);
+  node->setLayoutMeasuredDimension(mesaured_height, Dimension::Height);
 }
 
 inline bool isFixedSize(float dim, SizingMode sizingMode) {
@@ -461,33 +527,112 @@ static bool measureNodeWithFixedSize(
     const float ownerHeight) {
   if (isFixedSize(availableWidth, widthSizingMode) &&
       isFixedSize(availableHeight, heightSizingMode)) {
-    node->setLayoutMeasuredDimension(
-        boundAxis(
-            node,
-            FlexDirection::Row,
-            direction,
-            yoga::isUndefined(availableWidth) ||
-                    (widthSizingMode == SizingMode::FitContent &&
-                     availableWidth < 0.0f)
-                ? 0.0f
-                : availableWidth,
-            ownerWidth,
-            ownerWidth),
-        Dimension::Width);
+    float mesaured_width = YGUndefined;
+    float mesaured_height = YGUndefined;
 
-    node->setLayoutMeasuredDimension(
-        boundAxis(
+    // Handle the aspect ratio constraint bounding for the main-axis when the
+    // cross-axis size has been limited by its own min/max constraint.
+    if (node->getOwner() && node->style().aspectRatio().isDefined()) {
+      if (isRow(node->getOwner()->style().flexDirection())) {
+        // Main-axis is Row.
+        mesaured_height = boundAxis(
             node,
             FlexDirection::Column,
             direction,
-            yoga::isUndefined(availableHeight) ||
+            YGFloatIsUndefined(availableHeight) ||
                     (heightSizingMode == SizingMode::FitContent &&
                      availableHeight < 0.0f)
                 ? 0.0f
                 : availableHeight,
             ownerHeight,
-            ownerWidth),
-        Dimension::Height);
+            ownerWidth);
+        float unbounded_width =
+            mesaured_height * node->style().aspectRatio().unwrap();
+        mesaured_width = boundAxis(
+            node,
+            FlexDirection::Row,
+            direction,
+            unbounded_width,
+            ownerWidth,
+            ownerWidth);
+
+        if (mesaured_width != unbounded_width) {
+          // also check the cross-axis aspect ratio when the main-axis min/max
+          // constraints are hit.
+          mesaured_height = boundAxis(
+              node,
+              FlexDirection::Column,
+              direction,
+              mesaured_width / node->style().aspectRatio().unwrap(),
+              ownerHeight,
+              ownerWidth);
+        }
+
+      } else {
+        // Main-axis is Column.
+        mesaured_width = boundAxis(
+            node,
+            FlexDirection::Row,
+            direction,
+            YGFloatIsUndefined(availableWidth) ||
+                    (widthSizingMode == SizingMode::FitContent &&
+                     availableWidth < 0.0f)
+                ? 0.0f
+                : availableWidth,
+            ownerWidth,
+            ownerWidth);
+        float unbounded_height =
+            mesaured_width / node->style().aspectRatio().unwrap();
+        mesaured_height = boundAxis(
+            node,
+            FlexDirection::Column,
+            direction,
+            unbounded_height,
+            ownerHeight,
+            ownerWidth);
+
+        if (mesaured_height != unbounded_height) {
+          // also check the cross-axis aspect ratio when the main-axis min/max
+          // constraints are hit.
+          mesaured_width = boundAxis(
+              node,
+              FlexDirection::Row,
+              direction,
+              mesaured_height * node->style().aspectRatio().unwrap(),
+              ownerWidth,
+              ownerWidth);
+        }
+      }
+    }
+
+    if (mesaured_width == YGUndefined) {
+      mesaured_width = boundAxis(
+          node,
+          FlexDirection::Row,
+          direction,
+          YGFloatIsUndefined(availableWidth) ||
+                  (widthSizingMode == SizingMode::FitContent &&
+                   availableWidth < 0.0f)
+              ? 0.0f
+              : availableWidth,
+          ownerWidth,
+          ownerWidth);
+    }
+    if (mesaured_height == YGUndefined) {
+      mesaured_height = boundAxis(
+          node,
+          FlexDirection::Column,
+          direction,
+          YGFloatIsUndefined(availableHeight) ||
+                  (heightSizingMode == SizingMode::FitContent &&
+                   availableHeight < 0.0f)
+              ? 0.0f
+              : availableHeight,
+          ownerHeight,
+          ownerWidth);
+    }
+    node->setLayoutMeasuredDimension(mesaured_width, Dimension::Width);
+    node->setLayoutMeasuredDimension(mesaured_height, Dimension::Height);
     return true;
   }
 
@@ -605,6 +750,9 @@ static float computeFlexBasisForChildren(
       child->setHasNewLayout(true);
       child->setDirty(false);
       continue;
+    } else if (child->style().display() == Display::Custom) {
+      child->setDirty(false);
+      continue;
     }
     if (performLayout) {
       // Set the initial position (relative to the owner).
@@ -614,6 +762,7 @@ static float computeFlexBasisForChildren(
     }
 
     if (child->style().positionType() == PositionType::Absolute) {
+      // TODO: needs aspect ratio enforcement for min/max size constraints.
       continue;
     }
     if (child == singleFlexChild) {
@@ -715,7 +864,7 @@ static float distributeFreeSpaceSecondPass(
       flexGrowFactor = currentLineChild->resolveFlexGrow();
 
       // Is this child able to grow?
-      if (!std::isnan(flexGrowFactor) && flexGrowFactor != 0) {
+      if (yoga::isDefined(flexGrowFactor) && flexGrowFactor != 0) {
         updatedMainSize = boundAxis(
             currentLineChild,
             mainAxis,
@@ -749,7 +898,7 @@ static float distributeFreeSpaceSecondPass(
 
       childCrossSize += marginCross;
     } else if (
-        !std::isnan(availableInnerCrossDim) &&
+        yoga::isDefined(availableInnerCrossDim) &&
         !currentLineChild->hasDefiniteLength(
             dimension(crossAxis), availableInnerCrossDim) &&
         sizingModeCrossDim == SizingMode::StretchFit &&
@@ -1450,6 +1599,61 @@ static void calculateLayoutImpl(
       ownerHeight,
       ownerWidth);
 
+  // Finalise the inner bounds by checking the aspect ratio constraint. This
+  // provides child node with correct limits to work with.
+  if (node->style().aspectRatio().isDefined() &&
+      !YGFloatIsUndefined(availableInnerWidth) &&
+      !YGFloatIsUndefined(availableInnerHeight)) {
+    // If one dimension has the aspect ratio size change the size, then update
+    // the other dimension based on the corrected size too (in case limits are
+    // hit)
+    float aspect_scaled_size = ((availableInnerHeight + paddingAndBorderAxisColumn) *
+         node->style().aspectRatio().unwrap()) - paddingAndBorderAxisRow;
+    if (roundValueToPixelGrid(
+            aspect_scaled_size - availableInnerWidth, 1, false, false) != 0) {
+      availableInnerWidth = calculateAvailableInnerDimension(
+          node,
+          direction,
+          Dimension::Width,
+          aspect_scaled_size + paddingAndBorderAxisRow,
+          paddingAndBorderAxisRow,
+          ownerWidth,
+          ownerWidth);
+      availableInnerHeight = calculateAvailableInnerDimension(
+          node,
+          direction,
+          Dimension::Height,
+          ((availableInnerWidth + paddingAndBorderAxisRow) /
+           node->style().aspectRatio().unwrap()),
+          paddingAndBorderAxisColumn,
+          ownerHeight,
+          ownerWidth);
+    } else {
+      aspect_scaled_size = ((availableInnerWidth + paddingAndBorderAxisRow) /
+          node->style().aspectRatio().unwrap()) - paddingAndBorderAxisColumn;
+      if (roundValueToPixelGrid(
+              aspect_scaled_size - availableInnerHeight, 1, false, false) != 0) {
+        availableInnerHeight = calculateAvailableInnerDimension(
+            node,
+            direction,
+            Dimension::Height,
+            aspect_scaled_size + paddingAndBorderAxisColumn,
+            paddingAndBorderAxisColumn,
+            ownerHeight,
+            ownerWidth);
+        availableInnerWidth = calculateAvailableInnerDimension(
+            node,
+            direction,
+            Dimension::Width,
+            ((availableInnerHeight + paddingAndBorderAxisColumn) *
+             node->style().aspectRatio().unwrap()),
+            paddingAndBorderAxisRow,
+            ownerWidth,
+            ownerWidth);
+      }
+    }
+  }
+
   float availableInnerMainDim =
       isMainAxisRow ? availableInnerWidth : availableInnerHeight;
   const float availableInnerCrossDim =
@@ -1792,7 +1996,6 @@ static void calculateLayoutImpl(
                     (isMainAxisRow && crossAxisDoesNotGrow)
                 ? SizingMode::MaxContent
                 : SizingMode::StretchFit;
-
             calculateLayoutInternal(
                 child,
                 childWidth,
@@ -1924,7 +2127,8 @@ static void calculateLayoutImpl(
       float maxDescentForCurrentLine = 0;
       for (; iterator != node->getLayoutChildren().end(); iterator++) {
         const auto child = *iterator;
-        if (child->style().display() == Display::None) {
+        if (child->style().display() == Display::None ||
+            child->style().display() == Display::Custom) {
           continue;
         }
         if (child->style().positionType() != PositionType::Absolute) {
@@ -1962,7 +2166,8 @@ static void calculateLayoutImpl(
 
       for (iterator = startIterator; iterator != endIterator; iterator++) {
         const auto child = *iterator;
-        if (child->style().display() == Display::None) {
+        if (child->style().display() == Display::None ||
+            child->style().display() == Display::Custom) {
           continue;
         }
         if (child->style().positionType() != PositionType::Absolute) {
@@ -2074,25 +2279,8 @@ static void calculateLayoutImpl(
 
   // STEP 9: COMPUTING FINAL DIMENSIONS
 
-  node->setLayoutMeasuredDimension(
-      boundAxis(
-          node,
-          FlexDirection::Row,
-          direction,
-          availableWidth - marginAxisRow,
-          ownerWidth,
-          ownerWidth),
-      Dimension::Width);
-
-  node->setLayoutMeasuredDimension(
-      boundAxis(
-          node,
-          FlexDirection::Column,
-          direction,
-          availableHeight - marginAxisColumn,
-          ownerHeight,
-          ownerWidth),
-      Dimension::Height);
+  float mesaured_main_axis = YGUndefined;
+  float mesaured_cross_axis = YGUndefined;
 
   // If the user didn't specify a width or height for the node, set the
   // dimensions based on the children.
@@ -2101,33 +2289,36 @@ static void calculateLayoutImpl(
        sizingModeMainDim == SizingMode::FitContent)) {
     // Clamp the size to the min/max size, if specified, and make sure it
     // doesn't go below the padding and border amount.
-    node->setLayoutMeasuredDimension(
-        boundAxis(
-            node,
-            mainAxis,
-            direction,
-            maxLineMainDim,
-            mainAxisOwnerSize,
-            ownerWidth),
-        dimension(mainAxis));
-
+    mesaured_main_axis = boundAxis(
+        node,
+        mainAxis,
+        direction,
+        maxLineMainDim,
+        mainAxisOwnerSize,
+        ownerWidth);
   } else if (
       sizingModeMainDim == SizingMode::FitContent &&
       node->style().overflow() == Overflow::Scroll) {
-    node->setLayoutMeasuredDimension(
-        yoga::maxOrDefined(
-            yoga::minOrDefined(
-                availableInnerMainDim + paddingAndBorderAxisMain,
-                boundAxisWithinMinAndMax(
-                    node,
-                    direction,
-                    mainAxis,
-                    FloatOptional{maxLineMainDim},
-                    mainAxisOwnerSize,
-                    ownerWidth)
-                    .unwrap()),
-            paddingAndBorderAxisMain),
-        dimension(mainAxis));
+    mesaured_main_axis = yoga::maxOrDefined(
+        yoga::minOrDefined(
+            availableInnerMainDim + paddingAndBorderAxisMain,
+            boundAxisWithinMinAndMax(
+                node,
+                direction,
+                mainAxis,
+                FloatOptional{maxLineMainDim},
+                mainAxisOwnerSize,
+                ownerWidth)
+                .unwrap()),
+        paddingAndBorderAxisMain);
+  } else {
+    mesaured_main_axis = boundAxis(
+        node,
+        mainAxis,
+        direction,
+        availableInnerMainDim + paddingAndBorderAxisMain,
+        mainAxisOwnerSize,
+        ownerWidth);
   }
 
   if (sizingModeCrossDim == SizingMode::MaxContent ||
@@ -2135,35 +2326,59 @@ static void calculateLayoutImpl(
        sizingModeCrossDim == SizingMode::FitContent)) {
     // Clamp the size to the min/max size, if specified, and make sure it
     // doesn't go below the padding and border amount.
-    node->setLayoutMeasuredDimension(
-        boundAxis(
-            node,
-            crossAxis,
-            direction,
-            totalLineCrossDim + paddingAndBorderAxisCross,
-            crossAxisOwnerSize,
-            ownerWidth),
-        dimension(crossAxis));
+    mesaured_cross_axis = boundAxis(
+        node,
+        crossAxis,
+        direction,
+        totalLineCrossDim + paddingAndBorderAxisCross,
+        crossAxisOwnerSize,
+        ownerWidth);
 
   } else if (
       sizingModeCrossDim == SizingMode::FitContent &&
       node->style().overflow() == Overflow::Scroll) {
-    node->setLayoutMeasuredDimension(
-        yoga::maxOrDefined(
-            yoga::minOrDefined(
-                availableInnerCrossDim + paddingAndBorderAxisCross,
-                boundAxisWithinMinAndMax(
-                    node,
-                    direction,
-                    crossAxis,
-                    FloatOptional{
-                        totalLineCrossDim + paddingAndBorderAxisCross},
-                    crossAxisOwnerSize,
-                    ownerWidth)
-                    .unwrap()),
-            paddingAndBorderAxisCross),
-        dimension(crossAxis));
+    mesaured_cross_axis = yoga::maxOrDefined(
+        yoga::minOrDefined(
+            availableInnerCrossDim + paddingAndBorderAxisCross,
+            boundAxisWithinMinAndMax(
+                node,
+                direction,
+                crossAxis,
+                FloatOptional{totalLineCrossDim + paddingAndBorderAxisCross},
+                crossAxisOwnerSize,
+                ownerWidth)
+                .unwrap()),
+        paddingAndBorderAxisCross);
+  } else {
+    float crossAxisAvailableInnerSize = availableInnerCrossDim + paddingAndBorderAxisCross;
+    mesaured_cross_axis = boundAxis(
+        node,
+        crossAxis,
+        direction,
+        crossAxisAvailableInnerSize,
+        crossAxisOwnerSize,
+        ownerWidth);
+
+    // Handle the aspect ratio constraint bounding for the main-axis when the
+    // cross-axis size has been limited by its own min/max constraint.
+    if (node->style().aspectRatio().isDefined()) {
+      if (mesaured_cross_axis != crossAxisAvailableInnerSize) {
+        float aspect_ratio = node->style().aspectRatio().unwrap();
+        mesaured_main_axis = boundAxis(
+            node,
+            mainAxis,
+            direction,
+            isMainAxisRow ? mesaured_cross_axis * aspect_ratio
+                          : mesaured_cross_axis / aspect_ratio,
+            mainAxisOwnerSize,
+            ownerWidth);
+        sizingModeMainDim = SizingMode::StretchFit;
+      }
+    }
   }
+
+  node->setLayoutMeasuredDimension(mesaured_main_axis, dimension(mainAxis));
+  node->setLayoutMeasuredDimension(mesaured_cross_axis, dimension(crossAxis));
 
   // As we only wrapped in normal direction yet, we need to reverse the
   // positions on wrap-reverse.
@@ -2190,6 +2405,7 @@ static void calculateLayoutImpl(
         // cannot guarantee that their positions are set when their parents are
         // done with layout.
         if (child->style().display() == Display::None ||
+            child->style().display() == Display::Custom ||
             child->style().positionType() == PositionType::Absolute) {
           continue;
         }

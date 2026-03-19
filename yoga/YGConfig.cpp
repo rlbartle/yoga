@@ -17,7 +17,8 @@ YGConfigRef YGConfigNew(void) {
 }
 
 void YGConfigFree(const YGConfigRef config) {
-  delete resolveRef(config);
+  if (config != YGConfigGetDefault())
+    delete resolveRef(config);
 }
 
 YGConfigConstRef YGConfigGetDefault() {

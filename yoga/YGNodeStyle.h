@@ -60,6 +60,10 @@ YG_EXPORT YGOverflow YGNodeStyleGetOverflow(YGNodeConstRef node);
 YG_EXPORT void YGNodeStyleSetDisplay(YGNodeRef node, YGDisplay display);
 YG_EXPORT YGDisplay YGNodeStyleGetDisplay(YGNodeConstRef node);
 
+YG_EXPORT void
+YGNodeStyleSetMaxLineItems(YGNodeRef nodeRef, const size_t maxLineItems);
+YG_EXPORT size_t YGNodeStyleGetMaxLineItems(YGNodeConstRef nodeRef);
+
 YG_EXPORT void YGNodeStyleSetFlex(YGNodeRef node, float flex);
 YG_EXPORT float YGNodeStyleGetFlex(YGNodeConstRef node);
 

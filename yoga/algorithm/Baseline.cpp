@@ -26,7 +26,7 @@ float calculateBaseline(const yoga::Node* node) {
 
     yoga::assertFatalWithNode(
         node,
-        !std::isnan(baseline),
+        !std::isnan(baseline) && yoga::isDefined(baseline),
         "Expect custom baseline function to not return NaN");
     return baseline;
   }

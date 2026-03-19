@@ -51,6 +51,14 @@ class YG_EXPORT Node : public ::YGNode {
     return context_;
   }
 
+  size_t getZOrder() const {
+    return zorder_;
+  }
+
+  bool getZOrderDistinctionSuppression() const {
+    return zorderDistinctionSuppression_;
+  }
+
   bool alwaysFormsContainingBlock() const {
     return alwaysFormsContainingBlock_;
   }
@@ -61,6 +69,10 @@ class YG_EXPORT Node : public ::YGNode {
 
   NodeType getNodeType() const {
     return nodeType_;
+  }
+
+  YGMeasureFunc getMeasureFunc() const noexcept {
+    return measureFunc_;
   }
 
   bool hasMeasureFunc() const noexcept {
@@ -206,6 +218,14 @@ class YG_EXPORT Node : public ::YGNode {
     context_ = context;
   }
 
+  void setZOrder(size_t zOrder) {
+    zorder_ = zOrder;
+  }
+
+  void setZOrderDistinctionSuppression(bool suppress) {
+    zorderDistinctionSuppression_ =  suppress;
+  }
+
   void setAlwaysFormsContainingBlock(bool alwaysFormsContainingBlock) {
     alwaysFormsContainingBlock_ = alwaysFormsContainingBlock;
   }
@@ -277,6 +297,7 @@ class YG_EXPORT Node : public ::YGNode {
       float ownerWidth) const;
   void processDimensions();
   Direction resolveDirection(Direction ownerDirection);
+  void sortChildren();
   void clearChildren();
   /// Replaces the occurrences of oldChild with newChild
   void replaceChild(Node* oldChild, Node* newChild);
@@ -314,6 +335,8 @@ class YG_EXPORT Node : public ::YGNode {
   bool alwaysFormsContainingBlock_ : 1 = false;
   NodeType nodeType_ : bitCount<NodeType>() = NodeType::Default;
   void* context_ = nullptr;
+  size_t zorder_ = SIZE_MAX;
+  bool zorderDistinctionSuppression_ = false;
   YGMeasureFunc measureFunc_ = nullptr;
   YGBaselineFunc baselineFunc_ = nullptr;
   YGDirtiedFunc dirtiedFunc_ = nullptr;
