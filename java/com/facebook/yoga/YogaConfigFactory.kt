@@ -8,5 +8,5 @@
 package com.facebook.yoga
 
 public object YogaConfigFactory {
-  @JvmStatic public fun create(): YogaConfig = YogaConfigJNIFinalizer()
+  @JvmStatic public fun create(useDefaultConfig: Boolean): YogaConfig = YogaConfigJNIFinalizer(useDefaultConfig)
 }

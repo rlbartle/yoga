@@ -42,6 +42,7 @@ public abstract class YogaNodeJNIBase extends YogaNode implements Cloneable {
   @DoNotStrip private @Nullable float[] arr = null;
 
   @DoNotStrip private int mLayoutDirection = 0;
+  @DoNotStrip private boolean mHadOverflow = false;
 
   private boolean mHasNewLayout = true;
 
@@ -67,6 +68,7 @@ public abstract class YogaNodeJNIBase extends YogaNode implements Cloneable {
     mData = null;
     arr = null;
     mHasNewLayout = true;
+    mHadOverflow = false;
     mLayoutDirection = 0;
 
     YogaNative.jni_YGNodeResetJNI(mNativePointer);
@@ -155,8 +157,15 @@ public abstract class YogaNodeJNIBase extends YogaNode implements Cloneable {
     }
   }
 
-  private void clearChildren() {
-    mChildren = null;
+  public void clearChildren() {
+    if (mChildren != null) {
+      for (YogaNodeJNIBase child : mChildren) {
+        if (child.mOwner == this) {
+          child.mOwner = null;
+        }
+      }
+      mChildren = null;
+    }
     YogaNative.jni_YGNodeRemoveAllChildrenJNI(mNativePointer);
   }
 
@@ -181,13 +190,6 @@ public abstract class YogaNodeJNIBase extends YogaNode implements Cloneable {
   @Nullable
   public YogaNodeJNIBase getOwner() {
     return mOwner;
-  }
-
-  /** @deprecated Use #getOwner() instead. This will be removed in the next version. */
-  @Deprecated
-  @Nullable
-  public YogaNodeJNIBase getParent() {
-    return getOwner();
   }
 
   public int indexOf(YogaNode child) {
@@ -235,6 +237,26 @@ public abstract class YogaNodeJNIBase extends YogaNode implements Cloneable {
 
   public boolean isDirty() {
     return YogaNative.jni_YGNodeIsDirtyJNI(mNativePointer);
+  }
+
+  public int getZOrder() {
+    return YogaNative.jni_YGNodeGetZOrderJNI(mNativePointer);
+  }
+
+  public void setZOrder(int zOrder) {
+    YogaNative.jni_YGNodeSetZOrderJNI(mNativePointer, zOrder);
+  }
+
+  public void suppressZOrderDistinction(boolean suppress) {
+    YogaNative.jni_YGNodeSuppressZOrderDistinctionJNI(mNativePointer, suppress);
+  }
+
+  public int getMaxLineItems() {
+    return YogaNative.jni_YGNodeStyleGetMaxLineItemsJNI(mNativePointer);
+  }
+
+  public void setMaxLineItems(int maxLineItems) {
+    YogaNative.jni_YGNodeStyleSetMaxLineItemsJNI(mNativePointer, maxLineItems);
   }
 
   @Override
@@ -597,7 +619,7 @@ public abstract class YogaNodeJNIBase extends YogaNode implements Cloneable {
     YogaNative.jni_YGNodeStyleSetAspectRatioJNI(mNativePointer, aspectRatio);
   }
 
-  public void setMeasureFunction(YogaMeasureFunction measureFunction) {
+  public void setMeasureFunction(@Nullable YogaMeasureFunction measureFunction) {
     mMeasureFunction = measureFunction;
     YogaNative.jni_YGNodeSetHasMeasureFuncJNI(mNativePointer, measureFunction != null);
   }
@@ -626,7 +648,7 @@ public abstract class YogaNodeJNIBase extends YogaNode implements Cloneable {
         YogaMeasureMode.fromInt(heightMode));
   }
 
-  public void setBaselineFunction(YogaBaselineFunction baselineFunction) {
+  public void setBaselineFunction(@Nullable YogaBaselineFunction baselineFunction) {
     mBaselineFunction = baselineFunction;
     YogaNative.jni_YGNodeSetHasBaselineFuncJNI(mNativePointer, baselineFunction != null);
   }
@@ -654,26 +676,12 @@ public abstract class YogaNodeJNIBase extends YogaNode implements Cloneable {
     return mData;
   }
 
-  /**
-   * This method replaces the child at childIndex position with the newNode received by parameter.
-   * This is different than calling removeChildAt and addChildAt because this method ONLY replaces
-   * the child in the mChildren datastructure. @DoNotStrip: called from JNI
-   *
-   * @return the nativePointer of the newNode {@link YogaNode}
-   */
-  @DoNotStrip
-  private final long replaceChild(YogaNodeJNIBase newNode, int childIndex) {
-    if (mChildren == null) {
-      throw new IllegalStateException("Cannot replace child. YogaNode does not have children");
-    }
-    mChildren.remove(childIndex);
-    mChildren.add(childIndex, newNode);
-    newNode.mOwner = this;
-    return newNode.mNativePointer;
-  }
-
   private static YogaValue valueFromLong(long raw) {
     return new YogaValue(Float.intBitsToFloat((int) raw), (int) (raw >> 32));
+  }
+
+  public boolean hadOverflow() {
+    return mHadOverflow;
   }
 
   @Override

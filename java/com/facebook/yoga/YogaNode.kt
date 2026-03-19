@@ -26,6 +26,8 @@ public abstract class YogaNode : YogaProps {
 
   public abstract val isReferenceBaseline: Boolean
 
+  public abstract fun clearChildren()
+
   public abstract fun removeChildAt(i: Int): YogaNode
 
   /**
@@ -36,27 +38,31 @@ public abstract class YogaNode : YogaProps {
    */
   public abstract fun getOwner(): YogaNode?
 
-  @Deprecated(
-      "Use getOwner() instead. This will be removed in the next version. ",
-      replaceWith = ReplaceWith("getOwner()"),
-  )
-  public abstract fun getParent(): YogaNode?
-
   public abstract fun indexOf(child: YogaNode): Int
 
   public abstract fun calculateLayout(width: Float, height: Float)
 
   public abstract fun hasNewLayout(): Boolean
 
+  public abstract fun hadOverflow(): Boolean
+
   public abstract fun dirty()
 
   public abstract fun isDirty(): Boolean
+
+  public abstract fun getZOrder(): Int
+
+  public abstract fun setZOrder(zOrder: Int)
+
+  public abstract fun suppressZOrderDistinction(suppress: Boolean)
 
   public abstract fun copyStyle(srcNode: YogaNode)
 
   public abstract fun markLayoutSeen()
 
   abstract override val styleDirection: YogaDirection
+
+  abstract override val maxLineItems: Int
 
   abstract override fun setDirection(direction: YogaDirection)
 
@@ -204,11 +210,11 @@ public abstract class YogaNode : YogaProps {
 
   abstract override var aspectRatio: Float
 
-  public abstract fun getGap(gutter: YogaGutter): YogaValue
+  abstract override fun getGap(gutter: YogaGutter): YogaValue
 
-  public abstract fun setGap(gutter: YogaGutter, gapLength: Float)
+  abstract override fun setGap(gutter: YogaGutter, value: Float)
 
-  public abstract fun setGapPercent(gutter: YogaGutter, gapLength: Float)
+  abstract override fun setGapPercent(gutter: YogaGutter, percent: Float)
 
   public abstract val layoutX: Float
 
@@ -226,13 +232,15 @@ public abstract class YogaNode : YogaProps {
 
   public abstract val layoutDirection: YogaDirection
 
-  abstract override fun setMeasureFunction(measureFunction: YogaMeasureFunction)
+  abstract override fun setMeasureFunction(measureFunction: YogaMeasureFunction?)
 
-  abstract override fun setBaselineFunction(yogaBaselineFunction: YogaBaselineFunction)
+  abstract override fun setBaselineFunction(yogaBaselineFunction: YogaBaselineFunction?)
 
   public abstract val isMeasureDefined: Boolean
 
   public abstract val isBaselineDefined: Boolean
+
+  abstract override fun setMaxLineItems(maxLineItems: Int)
 
   public abstract var data: Any?
 

@@ -101,6 +101,12 @@ public interface YogaProps {
 
   public fun setBorder(edge: YogaEdge, value: Float)
 
+  /* Gap properties */
+
+  public fun setGap(gutter: YogaGutter, value: Float)
+
+  public fun setGapPercent(gutter: YogaGutter, percent: Float)
+
   /* Flex basis properties */
 
   public fun setFlexBasisAuto()
@@ -123,9 +129,11 @@ public interface YogaProps {
 
   public fun setIsReferenceBaseline(isReferenceBaseline: Boolean)
 
-  public fun setMeasureFunction(measureFunction: YogaMeasureFunction)
+  public fun setMeasureFunction(measureFunction: YogaMeasureFunction?)
 
-  public fun setBaselineFunction(yogaBaselineFunction: YogaBaselineFunction)
+  public fun setBaselineFunction(yogaBaselineFunction: YogaBaselineFunction?)
+
+  public fun setMaxLineItems(maxLineItems: Int)
 
   /* Mutable properties - getter and setter with matching types */
 
@@ -157,6 +165,8 @@ public interface YogaProps {
 
   public val styleDirection: YogaDirection
 
+  public val maxLineItems: Int
+
   public val width: YogaValue
 
   public val minWidth: YogaValue
@@ -180,4 +190,6 @@ public interface YogaProps {
   public fun getPosition(edge: YogaEdge): YogaValue
 
   public fun getBorder(edge: YogaEdge): Float
+
+  public fun getGap(gutter: YogaGutter): YogaValue
 }

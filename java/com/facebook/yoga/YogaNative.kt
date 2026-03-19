@@ -20,6 +20,8 @@ public object YogaNative {
   // YGConfig related
   @JvmStatic public external fun jni_YGConfigNewJNI(): Long
 
+  @JvmStatic public external fun jni_YGConfigGetDefaultJNI(): Long
+
   @JvmStatic public external fun jni_YGConfigFreeJNI(nativePointer: Long)
 
   @JvmStatic
@@ -81,12 +83,24 @@ public object YogaNative {
 
   @JvmStatic public external fun jni_YGNodeIsDirtyJNI(nativePointer: Long): Boolean
 
+  @JvmStatic public external fun jni_YGNodeGetZOrderJNI(nativePointer: Long): Int
+
+  @JvmStatic public external fun jni_YGNodeSetZOrderJNI(nativePointer: Long, zOrder: Int)
+
+  @JvmStatic
+  public external fun jni_YGNodeSuppressZOrderDistinctionJNI(nativePointer: Long, suppress: Boolean)
+
   @JvmStatic
   public external fun jni_YGNodeCopyStyleJNI(dstNativePointer: Long, srcNativePointer: Long)
 
   @JvmStatic public external fun jni_YGNodeStyleGetDirectionJNI(nativePointer: Long): Int
 
   @JvmStatic public external fun jni_YGNodeStyleSetDirectionJNI(nativePointer: Long, direction: Int)
+
+  @JvmStatic public external fun jni_YGNodeStyleGetMaxLineItemsJNI(nativePointer: Long): Int
+
+  @JvmStatic
+  public external fun jni_YGNodeStyleSetMaxLineItemsJNI(nativePointer: Long, maxLineItems: Int)
 
   @JvmStatic public external fun jni_YGNodeStyleGetFlexDirectionJNI(nativePointer: Long): Int
 

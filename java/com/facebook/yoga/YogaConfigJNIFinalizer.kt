@@ -7,7 +7,10 @@
 
 package com.facebook.yoga
 
-public class YogaConfigJNIFinalizer public constructor() : YogaConfigJNIBase() {
+public class YogaConfigJNIFinalizer : YogaConfigJNIBase {
+  public constructor() : super()
+
+  public constructor(useDefaultConfig: Boolean) : super(useDefaultConfig)
 
   /*
    * This is a valid use of finalize. No other mechanism is appropriate.

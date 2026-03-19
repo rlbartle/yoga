@@ -17,11 +17,11 @@ group = "com.facebook.yoga"
 android {
   namespace = "com.facebook.yoga"
   compileSdk = 36
-  buildToolsVersion = "36.0.0"
-  ndkVersion = "27.1.12297006"
+  buildToolsVersion = "36.1.0"
+  ndkVersion = "29.0.14206865"
 
   defaultConfig {
-    minSdk = 21
+    minSdk = 26
     consumerProguardFiles("proguard-rules.pro")
 
     ndk { abiFilters.addAll(setOf("x86", "x86_64", "armeabi-v7a", "arm64-v8a")) }
@@ -57,7 +57,7 @@ android {
 dependencies {
   implementation("com.google.code.findbugs:jsr305:3.0.2")
   implementation("com.facebook.soloader:soloader:0.12.1")
-  implementation("androidx.core:core-ktx:1.16.0")
+  implementation("androidx.core:core-ktx:1.18.0")
   testImplementation("junit:junit:4.13.2")
 }
 
@@ -80,11 +80,11 @@ publishing {
             "An embeddable and performant flexbox layout engine with bindings for multiple languages"
         )
         name.set(project.name)
-        url.set("https://github.com/facebook/yoga.git")
+        url.set("https://github.com/rlbartle/yoga.git")
         licenses {
           license {
             name.set("MIT License")
-            url.set("https://github.com/facebook/yoga/blob/main/LICENSE")
+            url.set("https://github.com/rlbartle/yoga/blob/main/LICENSE")
             distribution.set("repo")
           }
         }
@@ -95,7 +95,7 @@ publishing {
             email.set("opensource@meta.com")
           }
         }
-        scm { url.set("scm:git:git@github.com:facebook/yoga.git") }
+        scm { url.set("scm:git:git@github.com:rlbartle/yoga.git") }
       }
     }
   }

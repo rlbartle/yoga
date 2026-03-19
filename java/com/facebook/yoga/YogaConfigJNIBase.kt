@@ -9,6 +9,7 @@ package com.facebook.yoga
 
 import com.facebook.yoga.YogaNative.jni_YGConfigGetErrataJNI
 import com.facebook.yoga.YogaNative.jni_YGConfigNewJNI
+import com.facebook.yoga.YogaNative.jni_YGConfigGetDefaultJNI
 import com.facebook.yoga.YogaNative.jni_YGConfigSetErrataJNI
 import com.facebook.yoga.YogaNative.jni_YGConfigSetExperimentalFeatureEnabledJNI
 import com.facebook.yoga.YogaNative.jni_YGConfigSetLoggerJNI
@@ -25,7 +26,7 @@ private constructor(@JvmField protected var nativePointer: Long) : YogaConfig() 
 
   internal constructor() : this(jni_YGConfigNewJNI())
 
-  internal constructor(useVanillaJNI: Boolean) : this(jni_YGConfigNewJNI())
+  internal constructor(useDefaultConfig: Boolean) : this(if (useDefaultConfig) jni_YGConfigGetDefaultJNI() else jni_YGConfigNewJNI())
 
   public override fun setExperimentalFeatureEnabled(
       feature: YogaExperimentalFeature,

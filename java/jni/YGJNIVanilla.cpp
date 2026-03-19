@@ -37,6 +37,10 @@ static jlong jni_YGConfigNewJNI(JNIEnv* /*env*/, jobject /*obj*/) {
   return reinterpret_cast<jlong>(YGConfigNew());
 }
 
+static jlong jni_YGConfigGetDefaultJNI(JNIEnv* /*env*/, jobject /*obj*/) {
+  return reinterpret_cast<jlong>(YGConfigGetDefault());
+}
+
 static void
 jni_YGConfigFreeJNI(JNIEnv* /*env*/, jobject /*obj*/, jlong nativePointer) {
   const YGConfigRef config = _jlong2YGConfigRef(nativePointer);
@@ -255,6 +259,21 @@ static void jni_YGNodeRemoveChildJNI(
       _jlong2YGNodeRef(nativePointer), _jlong2YGNodeRef(childPointer));
 }
 
+static void YGTransferHadOverflow(YGNodeConstRef node, jobject javaNode) {
+  // Don't change this field name without changing the name of the field in
+  // YogaNodeJNIBase.java
+  JNIEnv* env = getCurrentEnv();
+  auto objectClass = facebook::yoga::vanillajni::make_local_ref(
+      env, env->GetObjectClass(javaNode));
+  static const jfieldID hadOverflowField =
+      facebook::yoga::vanillajni::getFieldId(
+          env, objectClass.get(), "mHadOverflow", "Z");
+  env->SetBooleanField(
+      javaNode,
+      hadOverflowField,
+      static_cast<jboolean>(YGNodeLayoutGetHadOverflow(node)));
+}
+
 static void
 YGTransferLayoutOutputsRecursive(JNIEnv* env, jobject thiz, YGNodeRef root) {
   if (!YGNodeGetHasNewLayout(root)) {
@@ -313,7 +332,7 @@ YGTransferLayoutOutputsRecursive(JNIEnv* env, jobject thiz, YGNodeRef root) {
   // Create scope to make sure to release any local refs created here
   {
     // Don't change this field name without changing the name of the field in
-    // Database.java
+    // YogaNodeJNIBase.java
     auto objectClass = facebook::yoga::vanillajni::make_local_ref(
         env, env->GetObjectClass(obj.get()));
     static const jfieldID arrField = facebook::yoga::vanillajni::getFieldId(
@@ -325,6 +344,7 @@ YGTransferLayoutOutputsRecursive(JNIEnv* env, jobject thiz, YGNodeRef root) {
     env->SetObjectField(obj.get(), arrField, arrFinal.get());
   }
 
+  YGTransferHadOverflow(root, obj.get());
   YGNodeSetHasNewLayout(root, false);
 
   for (size_t i = 0; i < YGNodeGetChildCount(root); i++) {
@@ -505,6 +525,7 @@ YG_NODE_JNI_STYLE_PROP(jint, YGDisplay, Display);
 YG_NODE_JNI_STYLE_PROP(jfloat, float, Flex);
 YG_NODE_JNI_STYLE_PROP(jfloat, float, FlexGrow);
 YG_NODE_JNI_STYLE_PROP(jfloat, float, FlexShrink);
+YG_NODE_JNI_STYLE_PROP(jint, size_t, MaxLineItems);
 
 YG_NODE_JNI_STYLE_UNIT_PROP_AUTO_INTRINSIC(FlexBasis);
 YG_NODE_JNI_STYLE_UNIT_PROP_AUTO_INTRINSIC(Width);
@@ -624,9 +645,34 @@ static void jni_YGNodeStyleSetBorderJNI(
       yogaNodeRef, static_cast<YGEdge>(edge), static_cast<float>(border));
 }
 
+static jint jni_YGNodeGetZOrderJNI(
+    JNIEnv* /*env*/,
+    jobject /*obj*/,
+    jlong nativePointer) {
+  return (jint)YGNodeGetZOrder(_jlong2YGNodeRef(nativePointer));
+}
+
+static void jni_YGNodeSetZOrderJNI(
+    JNIEnv* /*env*/,
+    jobject /*obj*/,
+    jlong nativePointer,
+    jint value) {
+  YGNodeSetZOrder(
+	  _jlong2YGNodeRef(nativePointer), static_cast<size_t>(value));  	
+}
+
+static void jni_YGNodeSuppressZOrderDistinctionJNI(
+    JNIEnv* /*env*/,
+    jobject /*obj*/,
+    jlong nativePointer,
+    jboolean suppress) {
+  YGNodeSuppressZOrderDistinction(
+	  _jlong2YGNodeRef(nativePointer), suppress);  	
+}
+
 static void YGTransferLayoutDirection(YGNodeConstRef node, jobject javaNode) {
   // Don't change this field name without changing the name of the field in
-  // Database.java
+  // YogaNodeJNIBase.java
   JNIEnv* env = getCurrentEnv();
   auto objectClass = facebook::yoga::vanillajni::make_local_ref(
       env, env->GetObjectClass(javaNode));
@@ -764,6 +810,7 @@ YG_NODE_JNI_STYLE_PROP(jfloat, float, AspectRatio);
 
 static JNINativeMethod methods[] = {
     {"jni_YGConfigNewJNI", "()J", (void*)jni_YGConfigNewJNI},
+    {"jni_YGConfigGetDefaultJNI", "()J", (void*)jni_YGConfigGetDefaultJNI},
     {"jni_YGConfigFreeJNI", "(J)V", (void*)jni_YGConfigFreeJNI},
     {"jni_YGConfigSetExperimentalFeatureEnabledJNI",
      "(JIZ)V",
@@ -801,6 +848,21 @@ static JNINativeMethod methods[] = {
     {"jni_YGNodeMarkDirtyJNI", "(J)V", (void*)jni_YGNodeMarkDirtyJNI},
     {"jni_YGNodeIsDirtyJNI", "(J)Z", (void*)jni_YGNodeIsDirtyJNI},
     {"jni_YGNodeCopyStyleJNI", "(JJ)V", (void*)jni_YGNodeCopyStyleJNI},
+	{"jni_YGNodeGetZOrderJNI",
+     "(J)I",
+     (void*)jni_YGNodeGetZOrderJNI},
+    {"jni_YGNodeSetZOrderJNI",
+     "(JI)V",
+     (void*)jni_YGNodeSetZOrderJNI},
+    {"jni_YGNodeSuppressZOrderDistinctionJNI",
+     "(JZ)V",
+     (void*)jni_YGNodeSuppressZOrderDistinctionJNI},
+    {"jni_YGNodeStyleGetMaxLineItemsJNI",
+     "(J)I",
+     (void*)jni_YGNodeStyleGetMaxLineItemsJNI},
+    {"jni_YGNodeStyleSetMaxLineItemsJNI",
+     "(JI)V",
+     (void*)jni_YGNodeStyleSetMaxLineItemsJNI},
     {"jni_YGNodeStyleGetDirectionJNI",
      "(J)I",
      (void*)jni_YGNodeStyleGetDirectionJNI},
