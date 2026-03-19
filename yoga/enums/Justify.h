@@ -16,13 +16,13 @@
 namespace facebook::yoga {
 
 enum class Justify : uint8_t {
-  Auto = YGJustifyAuto,
   FlexStart = YGJustifyFlexStart,
   Center = YGJustifyCenter,
   FlexEnd = YGJustifyFlexEnd,
   SpaceBetween = YGJustifySpaceBetween,
   SpaceAround = YGJustifySpaceAround,
   SpaceEvenly = YGJustifySpaceEvenly,
+  Auto = YGJustifyAuto,
   Stretch = YGJustifyStretch,
   Start = YGJustifyStart,
   End = YGJustifyEnd,

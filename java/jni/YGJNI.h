@@ -63,7 +63,7 @@ class YGNodeEdges {
 };
 
 struct YogaValue {
-  static constexpr jint NAN_BYTES = 0x7fc00000;
+  static constexpr jint UNDEF_BYTES = 0x6258d727; // 1e+21
 
   static jlong asJavaLong(const YGValue& value) {
     uint32_t valueBytes = 0;
@@ -71,7 +71,7 @@ struct YogaValue {
     return ((jlong)value.unit) << 32 | valueBytes;
   }
   constexpr static jlong undefinedAsJavaLong() {
-    return ((jlong)YGUnitUndefined) << 32 | NAN_BYTES;
+    return ((jlong)YGUnitUndefined) << 32 | UNDEF_BYTES;
   }
 };
 } // namespace

@@ -17,10 +17,10 @@
  */
 #ifdef __cplusplus
 #include <limits>
-constexpr float YGUndefined = std::numeric_limits<float>::quiet_NaN();
+constexpr float YGUndefined = 10E20F;
 #else
 #include <math.h>
-#define YGUndefined NAN
+#define YGUndefined 10E20F
 #endif
 
 YG_EXTERN_C_BEGIN

@@ -18,13 +18,14 @@ namespace facebook::yoga {
 enum class Display : uint8_t {
   Flex = YGDisplayFlex,
   None = YGDisplayNone,
+  Custom = YGDisplayCustom,
   Contents = YGDisplayContents,
   Grid = YGDisplayGrid,
 };
 
 template <>
 constexpr int32_t ordinalCount<Display>() {
-  return 4;
+  return 5;
 }
 
 constexpr Display scopedEnum(YGDisplay unscoped) {

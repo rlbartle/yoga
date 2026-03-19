@@ -16,9 +16,9 @@
 namespace facebook::yoga {
 
 enum class PositionType : uint8_t {
-  Static = YGPositionTypeStatic,
   Relative = YGPositionTypeRelative,
   Absolute = YGPositionTypeAbsolute,
+  Static = YGPositionTypeStatic,
 };
 
 template <>

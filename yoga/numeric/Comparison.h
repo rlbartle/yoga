@@ -17,7 +17,7 @@
 namespace facebook::yoga {
 
 constexpr bool isUndefined(std::floating_point auto value) {
-  return value != value;
+  return value >= 10E8 || value <= -10E8;
 }
 
 constexpr bool isDefined(std::floating_point auto value) {
@@ -52,7 +52,7 @@ constexpr auto minOrDefined(
 }
 
 // Custom equality functions using a hardcoded epsilon of 0.0001f, or returning
-// true if both floats are NaN.
+// true if both floats are undefined.
 inline bool inexactEquals(float a, float b) {
   if (yoga::isDefined(a) && yoga::isDefined(b)) {
     return std::abs(a - b) < 0.0001f;

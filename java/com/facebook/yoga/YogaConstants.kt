@@ -8,11 +8,16 @@
 package com.facebook.yoga
 
 public object YogaConstants {
-  @JvmField public val UNDEFINED: Float = Float.NaN
+  @JvmField
+  public val UNDEFINED: Float = 1.0E21f
 
-  @JvmStatic public fun isUndefined(value: Float): Boolean = value.compareTo(UNDEFINED) == 0
+  @JvmStatic
+  public fun isUndefined(value: Float): Boolean =
+    value.compareTo(1.0E9f) >= 0 || value.compareTo(-1.0E9f) <= 0
 
-  @JvmStatic public fun isUndefined(value: YogaValue): Boolean = value.unit == YogaUnit.UNDEFINED
+  @JvmStatic
+  public fun isUndefined(value: YogaValue): Boolean = value.unit == YogaUnit.UNDEFINED
 
-  @JvmStatic public fun getUndefined(): Float = UNDEFINED
+  @JvmStatic
+  public fun getUndefined(): Float = UNDEFINED
 }

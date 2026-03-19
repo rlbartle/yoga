@@ -46,6 +46,7 @@ YG_ENUM_DECL(
     YGDisplay,
     YGDisplayFlex,
     YGDisplayNone,
+    YGDisplayCustom,
     YGDisplayContents,
     YGDisplayGrid)
 
@@ -99,13 +100,13 @@ YG_ENUM_DECL(
 
 YG_ENUM_DECL(
     YGJustify,
-    YGJustifyAuto,
     YGJustifyFlexStart,
     YGJustifyCenter,
     YGJustifyFlexEnd,
     YGJustifySpaceBetween,
     YGJustifySpaceAround,
     YGJustifySpaceEvenly,
+    YGJustifyAuto,
     YGJustifyStretch,
     YGJustifyStart,
     YGJustifyEnd)
@@ -138,9 +139,9 @@ YG_ENUM_DECL(
 
 YG_ENUM_DECL(
     YGPositionType,
-    YGPositionTypeStatic,
     YGPositionTypeRelative,
-    YGPositionTypeAbsolute)
+    YGPositionTypeAbsolute,
+    YGPositionTypeStatic)
 
 YG_ENUM_DECL(
     YGUnit,

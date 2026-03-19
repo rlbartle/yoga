@@ -12,8 +12,9 @@ package com.facebook.yoga;
 public enum YogaDisplay {
   FLEX(0),
   NONE(1),
-  CONTENTS(2),
-  GRID(3);
+  CUSTOM(2),
+  CONTENTS(3),
+  GRID(4);
 
   private final int mIntValue;
 
@@ -29,8 +30,9 @@ public enum YogaDisplay {
     switch (value) {
       case 0: return FLEX;
       case 1: return NONE;
-      case 2: return CONTENTS;
-      case 3: return GRID;
+      case 2: return CUSTOM;
+      case 3: return CONTENTS;
+      case 4: return GRID;
       default: throw new IllegalArgumentException("Unknown enum value: " + value);
     }
   }

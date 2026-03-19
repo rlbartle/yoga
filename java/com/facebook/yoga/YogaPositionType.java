@@ -10,9 +10,9 @@
 package com.facebook.yoga;
 
 public enum YogaPositionType {
-  STATIC(0),
-  RELATIVE(1),
-  ABSOLUTE(2);
+  RELATIVE(0),
+  ABSOLUTE(1),
+  STATIC(2);
 
   private final int mIntValue;
 
@@ -26,9 +26,9 @@ public enum YogaPositionType {
 
   public static YogaPositionType fromInt(int value) {
     switch (value) {
-      case 0: return STATIC;
-      case 1: return RELATIVE;
-      case 2: return ABSOLUTE;
+      case 0: return RELATIVE;
+      case 1: return ABSOLUTE;
+      case 2: return STATIC;
       default: throw new IllegalArgumentException("Unknown enum value: " + value);
     }
   }

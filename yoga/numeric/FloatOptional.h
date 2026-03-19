@@ -14,7 +14,7 @@ namespace facebook::yoga {
 
 struct FloatOptional {
  private:
-  float value_ = std::numeric_limits<float>::quiet_NaN();
+  float value_ = YGUndefined;
 
  public:
   explicit constexpr FloatOptional(float value) : value_(value) {}

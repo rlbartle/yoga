@@ -75,6 +75,8 @@ const char* YGDisplayToString(const YGDisplay value) {
       return "flex";
     case YGDisplayNone:
       return "none";
+    case YGDisplayCustom:
+      return "custom";
     case YGDisplayContents:
       return "contents";
     case YGDisplayGrid:
