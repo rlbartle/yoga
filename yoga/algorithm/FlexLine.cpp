@@ -59,7 +59,6 @@ FlexLine calculateFlexLine(
     if (child->style().flexEndMarginIsAuto(mainAxis, ownerDirection)) {
       numberOfAutoMargins++;
     }
-
     child->setLineIndex(lineCount);
     const float childMarginMainAxis =
         child->style().computeMarginForAxis(mainAxis, availableInnerWidth);
@@ -103,6 +102,7 @@ FlexLine calculateFlexLine(
 
     // Zero as maxLineItems is interpreted as unlimited since 0 makes no sense.
     if (itemsInFlow.size() == node->style().maxLineItems()) {
+      iterator++;
       break;
     }
   }
